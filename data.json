@@ -1,7 +1,7 @@
 {
     "project": {
         "name": "phidgets",
-        "version": "0.5.2-0",
+        "version": "0.5.3",
         "description": "A Node.js library enabling the use of various Phidgets interface boards.",
         "url": ""
     },
@@ -16,7 +16,8 @@
                 "PhidgetInterfaceKit": 1,
                 "PhidgetLED": 1,
                 "PhidgetBridge": 1,
-                "PhidgetStepper": 1
+                "PhidgetStepper": 1,
+                "PhidgetRFID": 1
             },
             "fors": {},
             "namespaces": {}
@@ -31,13 +32,14 @@
                 "PhidgetInterfaceKit": 1,
                 "PhidgetLED": 1,
                 "PhidgetBridge": 1,
-                "PhidgetStepper": 1
+                "PhidgetStepper": 1,
+                "PhidgetRFID": 1
             },
             "fors": {},
             "namespaces": {},
             "tag": "module",
             "file": "lib/phidgets.js",
-            "line": 1637,
+            "line": 2332,
             "description": "The `Phidgets` library module makes it easy to connect to various sensor and controller\nboards made by [Phidgets Inc.](http://www.phidgets.com) This library works under\n[Node.js](http://www.nodejs.org) and other compatible frameworks such as\n[io.js](http://www.iojs.org)\n\nFor support, go to the GitHub [project page](https://github.com/evantahler/nodePhidgets).\n\nPlease note that this library is an open source project that is not affiliated with\nPhidgets Inc.",
             "todo": [
                 "Add support for more Phidget boards"
@@ -126,6 +128,22 @@
             "file": "lib/phidgets.js",
             "line": 1637,
             "description": "The `PhidgetStepper` class is used to control the stepper motors connected to a\nPhidgetStepper board. It can be used to set a target position for the motors while\ncontrolling their maximum velocity and acceleration.\n\nHere is a simple example that moves the motor connected to output 0 to its 200 position\nand then brings it back to position 0. Before making it move, you must first \"engage\"\nthe motor. Also, you should always explicitely set the desired acceleration and\nvelocity (speed).\n\n    var phidgets = require('phidgets');\n    var ps = new phidgets.PhidgetStepper();\n\n    ps.addListener(\"opened\", onReady);\n\n    function onReady() {\n\n       // Engage motor and set desired properties\n       ps.engageMotor(0, true);\n       ps.setAcceleration(0, ps.maximumAcceleration);\n       ps.setTargetVelocity(0, ps.maximumVelocity);\n\n       // Makes the motor move\n       ps.setTargetPosition(0, 200);\n\n       // Triggered when the target position is reached\n       ps.once(\"target\", function(e, data) {\n         ps.setTargetPosition(0, 0);\n       });\n\n    }\n\n    ps.open();\n\nThe `PhidgetStepper` object adds 5 events to the basic ones inherited by all Phidgets.\nThey are:\n\n * `position`: triggered each time the motor's position changes\n * `start`: triggered when a motor starts moving\n * `stop`: triggered when a motor stops moving\n * `target`: triggered when the motor has reached its target position\n * `input`: triggered when a digital input changes (not available on all boards)\n\nThis object extends the `Phidget` object which itself extends Node.js'\n[`events.EventEmitter` object](https://nodejs.org/api/events.html#events_class_events_eventemitter).\nSee that object's documentation for more inherited methods and properties.",
+            "is_constructor": 1,
+            "extends": "Phidget"
+        },
+        "PhidgetRFID": {
+            "name": "PhidgetRFID",
+            "shortname": "PhidgetRFID",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "phidgets",
+            "namespace": "",
+            "file": "lib/phidgets.js",
+            "line": 2332,
+            "description": "The `PhidgetRFID` class allows you to use a PhidgetRFID board to read and write (if the board\nsupports if) RFID tags. The PhidgetRFID board supports 3 protocols:\n\n - EM4100/EM4102 40-bit\n - ISO11785 FDX-B encoding, Animal ID\n - PhidgetsTAG Protocol 24 character ASCII\n\nPlease note that the antenna must be activated for the `PhidgetRFID` to report tag reads. Here's\nan example of how to use this object to read from a tag:\n\n    var phidgets = require(\"Phidgets\");\n\n    var pRFID = new phidgets.PhidgetRFID()\n        .on('opened', function(emitter, data) {\n            emitter.antenna = true;\n            console.log(\"Device ready. Antenna activated.\");\n        })\n        .open();\n\nThis object extends the `Phidget` object which itself extends Node.js'\n[`events.EventEmitter` object](https://nodejs.org/api/events.html#events_class_events_eventemitter).\nSee that object's documentation for inherited methods.",
             "is_constructor": 1,
             "extends": "Phidget"
         }
@@ -2140,6 +2158,342 @@
             "line": 2330,
             "class": "PhidgetStepper",
             "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2369,
+            "description": "[read-only] Array of all protocols supported by the device.",
+            "itemtype": "property",
+            "name": "SUPPORTED_PROTOCOLS",
+            "type": "Array",
+            "static": 1,
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2385,
+            "description": "[read-only] An object containing information about the digital outputs of the device.\nOutput 0 is also labeled on the board as \"+5V\". Output 1 is also labeled on the board\nas \"LED\". This is not to be confused with the onboard LED. To control the onboard\nLED, please use the `PhidgetRFID.led` property.\n\nHere is how to retrieve an output's value or the total number of outputs:\n\n    PhidgetRFID.outputs[1].value     // Output 1 current value\n    PhidgetRFID.outputs.count        // Total number of outputs on the device",
+            "itemtype": "property",
+            "name": "outputs",
+            "type": "Object",
+            "class": "PhidgetRFID",
+            "module": "phidgets",
+            "subprops": [
+                {
+                    "name": "count",
+                    "description": "The total number of outputs on the device.",
+                    "type": "Int"
+                },
+                {
+                    "name": "outputs[int].value",
+                    "description": "The current value of the specified output.",
+                    "type": "Int"
+                }
+            ]
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2402,
+            "description": "[read-only] Status of the reader. The two possible statuses are:\n\n  - waiting: no tag is being detected because none are present or because the antenna is off\n  - detecting: a tag is currently being detected",
+            "itemtype": "property",
+            "name": "status",
+            "type": "String",
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2412,
+            "description": "[read-only] An object containing information about the last tag that was read.",
+            "itemtype": "property",
+            "name": "tag",
+            "type": "Object",
+            "class": "PhidgetRFID",
+            "module": "phidgets",
+            "subprops": [
+                {
+                    "name": "value",
+                    "description": "The tag's value.",
+                    "type": "Int"
+                },
+                {
+                    "name": "protocol",
+                    "description": "The tag's protocol.",
+                    "type": "Int"
+                },
+                {
+                    "name": "detectedAt",
+                    "description": "A `Date` object representing the moment when the tag was read.",
+                    "type": "Date"
+                },
+                {
+                    "name": "lostAt",
+                    "description": "A `Date` object representing the moment when the previously read\ntag was lost.",
+                    "type": "Date"
+                }
+            ]
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2429,
+            "description": "The status of the onboard LED (not to be confused with the LED output). Setting this\nproperty to `true` will turn on the onboard LED while setting it to `false` will turn it\noff.",
+            "itemtype": "property",
+            "name": "led",
+            "type": "Boolean",
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2447,
+            "description": "The activity status of the RFID antenna. The antenna must be activated in order for\nthe device to work properly. Setting this property to `true` activates the antenna\nwhile setting it to `false` deactivates it.",
+            "itemtype": "property",
+            "name": "antenna",
+            "type": "Boolean",
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2496,
+            "description": "Event emitted when a tag has been detected.",
+            "itemtype": "event",
+            "name": "detected",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "tag",
+                    "description": "",
+                    "type": "Object",
+                    "props": [
+                        {
+                            "name": "protocol",
+                            "description": "The tag's protocol. Supported protocols are: `ISO11785 FDX-B`,\n`EM4100` and `PhidgetTag`.",
+                            "type": "Number"
+                        },
+                        {
+                            "name": "value",
+                            "description": "The tag's value.",
+                            "type": "String"
+                        },
+                        {
+                            "name": "detectedAt",
+                            "description": "The date and time when the tag was detected.",
+                            "type": "Date"
+                        },
+                        {
+                            "name": "lostAt",
+                            "description": "The date and time when the tag was lost.",
+                            "type": "Date"
+                        }
+                    ]
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2517,
+            "description": "Event emitted when a previously detected tag is now lost",
+            "itemtype": "event",
+            "name": "lost",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "tag",
+                    "description": "",
+                    "type": "Object",
+                    "props": [
+                        {
+                            "name": "protocol",
+                            "description": "The tag's protocol. Supported protocols are: `ISO11785 FDX-B`,\n`EM4100` and `PhidgetTag`.",
+                            "type": "Number"
+                        },
+                        {
+                            "name": "value",
+                            "description": "The tag's value.",
+                            "type": "String"
+                        },
+                        {
+                            "name": "detectedAt",
+                            "description": "The date and time when the tag was detected.",
+                            "type": "Date"
+                        },
+                        {
+                            "name": "lostAt",
+                            "description": "The date and time when the tag was lost.",
+                            "type": "Date"
+                        }
+                    ]
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2535,
+            "description": "Event emitted when the device's status changes.",
+            "itemtype": "event",
+            "name": "status",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "status",
+                    "description": "Status of the device (`detecting` or `waiting`).",
+                    "type": "String"
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2552,
+            "description": "Event emitted when the antenna's status changes.",
+            "itemtype": "event",
+            "name": "antenna",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "status",
+                    "description": "Status of the antenna. `true` means it is now \"on\" and `false` means\nit is now \"off\".",
+                    "type": "Boolean"
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2570,
+            "description": "Event emitted when the onboard LED's status changes.",
+            "itemtype": "event",
+            "name": "led",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "status",
+                    "description": "Status of the LED. `true` means it is now \"on\" and `false` means it is\nnow \"off\".",
+                    "type": "Boolean"
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2589,
+            "description": "Event emitted when an output's status has changed.",
+            "itemtype": "event",
+            "name": "output",
+            "params": [
+                {
+                    "name": "emitter",
+                    "description": "The actual PhidgetRFID object that emitted the event.",
+                    "type": "PhidgetRFID"
+                },
+                {
+                    "name": "data",
+                    "description": "An object containing the output data and related information",
+                    "type": "Object",
+                    "props": [
+                        {
+                            "name": "index",
+                            "description": "The output's index number",
+                            "type": "Int"
+                        },
+                        {
+                            "name": "value",
+                            "description": "The output's new value",
+                            "type": "Int"
+                        }
+                    ]
+                }
+            ],
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2608,
+            "description": "Sets the specified output to active (`true`) or inactive (`false`). This method should only\nbe used after the board is 'opened'. Calling it before will fail silently.",
+            "itemtype": "method",
+            "name": "setOutput",
+            "params": [
+                {
+                    "name": "index",
+                    "description": "The output number to set (or array of output numbers)",
+                    "type": "Int|Array"
+                },
+                {
+                    "name": "value",
+                    "description": "The value you wish to set the output to.",
+                    "type": "Boolean",
+                    "optional": true,
+                    "optdefault": "false"
+                }
+            ],
+            "return": {
+                "description": "Returns the `PhidgetRFID` object to allow method chaining.",
+                "type": "PhidgetRFID"
+            },
+            "chainable": 1,
+            "class": "PhidgetRFID",
+            "module": "phidgets"
+        },
+        {
+            "file": "lib/phidgets.js",
+            "line": 2638,
+            "description": "Writes a tag. Please note that not all devices have write capacity. This method will be silently",
+            "itemtype": "method",
+            "name": "write",
+            "params": [
+                {
+                    "name": "tag",
+                    "description": "The value that should be written to the card.",
+                    "type": "String"
+                },
+                {
+                    "name": "protocol",
+                    "description": "An integer identifying the protocol to be used. 1 is EM4100, 2 is\nISO11785 FDX-B and 3 is PhidgetTag. Default is EM4100.",
+                    "type": "Number=1"
+                },
+                {
+                    "name": "lock",
+                    "description": "Whether the card should be prevented from being written again.\nDefault is false.",
+                    "type": "Boolean=false"
+                }
+            ],
+            "return": {
+                "description": "Returns the `PhidgetRFID` object to allow method chaining.",
+                "type": "PhidgetRFID"
+            },
+            "chainable": 1,
+            "class": "PhidgetRFID",
+            "module": "phidgets"
         }
     ],
     "warnings": [
@@ -2202,6 +2556,14 @@
         {
             "message": "replacing incorrect tag: returns with return",
             "line": " lib/phidgets.js:2099"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " lib/phidgets.js:2608"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " lib/phidgets.js:2638"
         },
         {
             "message": "Missing item type",

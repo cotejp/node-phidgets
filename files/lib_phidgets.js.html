@@ -17,7 +17,7 @@
                 <h1><img src="../assets/css/logo.png" title="phidgets" width="117" height="52"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2-0</em>
+            <em>API Docs for: 0.5.3</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -42,6 +42,7 @@
                                 <li><a href="../classes/PhidgetBridge.html">PhidgetBridge</a></li>
                                 <li><a href="../classes/PhidgetInterfaceKit.html">PhidgetInterfaceKit</a></li>
                                 <li><a href="../classes/PhidgetLED.html">PhidgetLED</a></li>
+                                <li><a href="../classes/PhidgetRFID.html">PhidgetRFID</a></li>
                                 <li><a href="../classes/PhidgetStepper.html">PhidgetStepper</a></li>
                             </ul>
                 
@@ -2415,106 +2416,339 @@ module.exports.PhidgetStepper = PhidgetStepper;
 /************************************  PhidgetRFID  *************************************/
 /****************************************************************************************/
 
-///**
-// * The PhidgetRFID class allows you to control a PhidgetRFID board.
-// *
-// * This object extends the &#x60;Phidget&#x60; object which itself extends Node.js&#x27;
-// * [&#x60;events.EventEmitter&#x60; object](https://nodejs.org/api/events.html#events_class_events_eventemitter).
-// * See that object&#x27;s documentation for inherited methods.
-// *
-// * @class PhidgetRFID
-// * @constructorÈ
-// * @extends Phidget
-// */
-//var PhidgetRFID = function() {
-//
-//  PhidgetRFID.super_.call(this, &quot;PhidgetRFID&quot;);
-//
-//  var self = this;
-//
-//  /**
-//   * [read-only] An object containing information about the digital outputs of the device.
-//   * Output 0 is also labeled on the board as &quot;+5V&quot;. Output 1 is also labeled on the board
-//   * as &quot;LED&quot;. This is not to be confused with the onboard LED. To control the onboard
-//   * LED, please use the &#x60;PhidgetRFID.led&#x60; property.
-//   *
-//   * Here is how to retrieve an outputs value or the total number of outputs:
-//   *
-//   *     PhidgetRFID.outputs[1].value     // Output 1 current value
-//   *     PhidgetRFID.outputs.count        // Total number of outputs on the device
-//   *
-//   * @property outputs {Object}
-//   * @property outputs.count {int} The total number of outputs on the device.
-//   * @property outputs[int].value {int} The current value of the specified output.
-//   */
-//  this.outputs = {};
-//
-//  /**
-//   * The status of the onboard LED (not to be confused with the LED output). Setting this
-//   * property to true will turn on the onboard LED while setting it to false will turn it
-//   * off.
-//   *
-//   * @property led {Boolean}
-//   */
-//  Object.defineProperty(this, &#x27;led&#x27;, {
-//    enumerable: true,
-//    get: function () {
-//      return (self._led);
-//    },
-//    set: function(value) {
-//      self._sendPck(self._makePckString(&#x27;LEDOn&#x27;), value ? 1:0, true);
-//      self._antenna = value ? true : false;
-//    }
-//  });
-//
-//  /**
-//   * The activity status of the RFID antenna. The antenna must be activated in order for
-//   * the reader to work properly. Setting this property to &#x60;true&#x60; activates the antenna
-//   * while setting it to false deactivates it.
-//   *
-//   * @property antenna {Boolean}
-//   */
-//  Object.defineProperty(this, &#x27;antenna&#x27;, {
-//    enumerable: true,
-//    get: function () {
-//      return (self._antenna);
-//    },
-//    set: function(value) {
-//      self._sendPck(self._makePckString(&#x27;AntennaOn&#x27;), value ? 1 : 0, true);
-//      self._antenna = value ? true : false;
-//    }
-//  });
-//
-//  this._led = false;
-//  this._antenna = false;
-//
-//};
-//
-//util.inherits(PhidgetRFID, Phidget);
+/**
+ * The &#x60;PhidgetRFID&#x60; class allows you to use a PhidgetRFID board to read and write (if the board
+ * supports if) RFID tags. The PhidgetRFID board supports 3 protocols:
+ *
+ *  - EM4100/EM4102 40-bit
+ *  - ISO11785 FDX-B encoding, Animal ID
+ *  - PhidgetsTAG Protocol 24 character ASCII
+ *
+ * Please note that the antenna must be activated for the &#x60;PhidgetRFID&#x60; to report tag reads. Here&#x27;s
+ * an example of how to use this object to read from a tag:
+ *
+ *     var phidgets = require(&quot;Phidgets&quot;);
+ *
+ *     var pRFID = new phidgets.PhidgetRFID()
+ *         .on(&#x27;opened&#x27;, function(emitter, data) {
+ *             emitter.antenna = true;
+ *             console.log(&quot;Device ready. Antenna activated.&quot;);
+ *         })
+ *         .open();
+ *
+ * This object extends the &#x60;Phidget&#x60; object which itself extends Node.js&#x27;
+ * [&#x60;events.EventEmitter&#x60; object](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+ * See that object&#x27;s documentation for inherited methods.
+ *
+ * @class PhidgetRFID
+ * @constructor
+ * @extends Phidget
+*/
+var PhidgetRFID = function() {
+
+ PhidgetRFID.super_.call(this, &quot;PhidgetRFID&quot;);
+
+ var self = this;
+
+  // Define some &quot;static&quot; properties
+  Object.defineProperties(this, {
+
+    /**
+     * [read-only] Array of all protocols supported by the device.
+     *
+     * @property SUPPORTED_PROTOCOLS
+     * @type Array
+     * @static
+     */
+    SUPPORTED_PROTOCOLS: {
+      value: [undefined, &quot;EM4100&quot;, &quot;ISO11785 FDX-B&quot;, &quot;PhidgetTag&quot;],
+      writable: false,
+      enumerable: true,
+      configurable: false
+    }
+
+  });
+
+ /**
+  * [read-only] An object containing information about the digital outputs of the device.
+  * Output 0 is also labeled on the board as &quot;+5V&quot;. Output 1 is also labeled on the board
+  * as &quot;LED&quot;. This is not to be confused with the onboard LED. To control the onboard
+  * LED, please use the &#x60;PhidgetRFID.led&#x60; property.
+  *
+  * Here is how to retrieve an output&#x27;s value or the total number of outputs:
+  *
+  *     PhidgetRFID.outputs[1].value     // Output 1 current value
+  *     PhidgetRFID.outputs.count        // Total number of outputs on the device
+  *
+  * @property outputs {Object}
+  * @property outputs.count {int} The total number of outputs on the device.
+  * @property outputs[int].value {int} The current value of the specified output.
+  */
+ this.outputs = {};
+
+ /**
+  * [read-only] Status of the reader. The two possible statuses are:
+  *
+  *   - waiting: no tag is being detected because none are present or because the antenna is off
+  *   - detecting: a tag is currently being detected
+  *
+  * @property status {String}
+  */
+ this.status = &quot;waiting&quot;;
+
+ /**
+  * [read-only] An object containing information about the last tag that was read.
+  *
+  * @property tag {Object}
+  * @property tag.value {int} The tag&#x27;s value.
+  * @property tag.protocol {int} The tag&#x27;s protocol.
+  * @property tag.detectedAt {Date} A &#x60;Date&#x60; object representing the moment when the tag was read.
+  * @property tag.lostAt {Date} A &#x60;Date&#x60; object representing the moment when the previously read
+  * tag was lost.
+  */
+ this.tag = {
+   value: 0,
+   protocol: 0,
+   detectedAt: undefined,
+   lostAt: undefined
+ };
+
+ /**
+  * The status of the onboard LED (not to be confused with the LED output). Setting this
+  * property to &#x60;true&#x60; will turn on the onboard LED while setting it to &#x60;false&#x60; will turn it
+  * off.
+  *
+  * @property led {Boolean}
+  */
+ Object.defineProperty(this, &#x27;led&#x27;, {
+   enumerable: true,
+   get: function () {
+     return (self._led);
+   },
+   set: function(value) {
+     self._sendPck(self._makePckString(&#x27;LEDOn&#x27;), value ? 1 : 0, true);
+     self._led = value ? true : false;
+   }
+ });
+
+ /**
+  * The activity status of the RFID antenna. The antenna must be activated in order for
+  * the device to work properly. Setting this property to &#x60;true&#x60; activates the antenna
+  * while setting it to &#x60;false&#x60; deactivates it.
+  *
+  * @property antenna {Boolean}
+  */
+ Object.defineProperty(this, &#x27;antenna&#x27;, {
+   enumerable: true,
+   get: function () {
+     return (self._antenna);
+   },
+   set: function(value) {
+     self._sendPck(self._makePckString(&#x27;AntennaOn&#x27;), value ? 1 : 0, true);
+     self._antenna = value ? true : false;
+   }
+
+ });
+
+ this._led = false;
+ this._antenna = false;
+
+};
+
+util.inherits(PhidgetRFID, Phidget);
 
 
-//PhidgetRFID.prototype._parsePhidgetSpecificData = function (data) {
-//
-//  //var self = this;
-//
-//  //if (data.keyword === &quot;NumberOfLEDs&quot;) {
-//  //  self.leds.count = parseInt(data.value);
-//  //} else if (data.keyword === &quot;Voltage&quot;) {
-//  //  var v = self._forceBetween(data.value, 1, 4);
-//  //  self._voltage = self.supportedVoltages[v - 1];
-//  //} else if (data.keyword === &quot;CurrentLimit&quot;) {
-//  //  self._currentLimit = self.supportedGlobalCurrentLimits[data.value - 1];
-//  //} else if (data.keyword === &quot;Brightness&quot;) {
-//  //  if (!self.leds[data.index]) { self.leds[data.index] = {}; }
-//  //  self.leds[data.index].value = parseInt(data.value);
-//  //} else if (data.keyword === &quot;CurrentLimitIndexed&quot;) {
-//  //  if (!self.leds[data.index]) { self.leds[data.index] = {}; }
-//  //  self.leds[data.index].currentLimit = parseInt(data.value);
-//  //}
-//
-//};
-//
-//module.exports.PhidgetRFID = PhidgetRFID;
+PhidgetRFID.prototype._parsePhidgetSpecificData = function (data) {
+
+ var self = this;
+
+ if (data.keyword === &quot;NumberOfOutputs&quot;) {
+
+   self.outputs.count = parseInt(data.value);
+
+ } else if (data.keyword === &quot;LastTag&quot;) {
+
+   self.tag.protocol = self.SUPPORTED_PROTOCOLS[data.value.split(&quot;/&quot;, 2)[0]];
+   self.tag.value = data.value.split(&quot;/&quot;, 2)[1];
+   self.tag.detectedAt = undefined;
+   self.tag.lostAt = undefined;
+
+ } else if (data.keyword === &quot;Tag2&quot;) {
+
+   self.tag.protocol = self.SUPPORTED_PROTOCOLS[data.value.split(&quot;/&quot;, 2)[0]];
+   self.tag.value = data.value.split(&quot;/&quot;, 2)[1];
+   self.tag.detectedAt = new Date();
+   self.tag.lostAt = undefined;
+
+   /**
+    * Event emitted when a tag has been detected.
+    *
+    * @event detected
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {Object} tag
+    * @param {Number} tag.protocol The tag&#x27;s protocol. Supported protocols are: &#x60;ISO11785 FDX-B&#x60;,
+    * &#x60;EM4100&#x60; and &#x60;PhidgetTag&#x60;.
+    * @param {String} tag.value The tag&#x27;s value.
+    * @param {Date} tag.detectedAt The date and time when the tag was detected.
+    * @param {Date} tag.lostAt The date and time when the tag was lost.
+    */
+   self.ready &amp;&amp; self.emit(&quot;detected&quot;, self, self.tag);
+
+
+ } else if (data.keyword === &quot;TagLoss2&quot;) {
+
+   self.tag.protocol = self.SUPPORTED_PROTOCOLS[data.value.split(&quot;/&quot;, 2)[0]];
+   self.tag.value = data.value.split(&quot;/&quot;, 2)[1];
+   self.tag.lostAt = new Date();
+
+   /**
+    * Event emitted when a previously detected tag is now lost
+    *
+    * @event lost
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {Object} tag
+    * @param {Number} tag.protocol The tag&#x27;s protocol. Supported protocols are: &#x60;ISO11785 FDX-B&#x60;,
+    * &#x60;EM4100&#x60; and &#x60;PhidgetTag&#x60;.
+    * @param {String} tag.value The tag&#x27;s value.
+    * @param {Date} tag.detectedAt The date and time when the tag was detected.
+    * @param {Date} tag.lostAt The date and time when the tag was lost.
+    */
+   self.ready &amp;&amp; self.emit(&quot;lost&quot;, self, self.tag);
+
+ } else if (data.keyword === &quot;TagState&quot;) {
+
+   self.status = (data.value === &#x27;1&#x27;) ? &quot;detecting&quot; : &quot;waiting&quot;;
+
+   /**
+    * Event emitted when the device&#x27;s status changes.
+    *
+    * @event status
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {String} status Status of the device (&#x60;detecting&#x60; or &#x60;waiting&#x60;).
+    */
+   self.emit(
+     &quot;status&quot;,
+     self,
+     self.status
+   );
+
+ } else if (data.keyword === &quot;AntennaOn&quot;) {
+
+   self._antenna = (data.value === &#x27;1&#x27;);
+
+   /**
+    * Event emitted when the antenna&#x27;s status changes.
+    *
+    * @event antenna
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {Boolean} status Status of the antenna. &#x60;true&#x60; means it is now &quot;on&quot; and &#x60;false&#x60; means
+    * it is now &quot;off&quot;.
+    */
+   self.emit(
+     &quot;antenna&quot;,
+     self,
+     self._led
+   );
+
+ } else if (data.keyword === &quot;LEDOn&quot;) {
+
+   self._led = (data.value === &#x27;1&#x27;);
+
+   /**
+    * Event emitted when the onboard LED&#x27;s status changes.
+    *
+    * @event led
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {Boolean} status Status of the LED. &#x60;true&#x60; means it is now &quot;on&quot; and &#x60;false&#x60; means it is
+    * now &quot;off&quot;.
+    */
+   self.emit(
+     &quot;led&quot;,
+     self,
+     self._led
+   );
+
+ } else if (data.keyword === &quot;Output&quot;) {
+
+   if (!self.outputs[data.index]) { self.outputs[data.index] = {}; }
+   self.outputs[data.index].value = (data.value === &#x27;1&#x27;);
+
+   /**
+    * Event emitted when an output&#x27;s status has changed.
+    *
+    * @event output
+    * @param {PhidgetRFID} emitter The actual PhidgetRFID object that emitted the event.
+    * @param {Object} data An object containing the output data and related information
+    * @param {int} data.index The output&#x27;s index number
+    * @param {int} data.value The output&#x27;s new value
+    */
+   self.emit(
+     &quot;output&quot;,
+     self,
+     { &quot;index&quot;: data.index, &quot;value&quot;: self.outputs[data.index].value }
+   );
+
+ }
+
+};
+
+/**
+ * Sets the specified output to active (&#x60;true&#x60;) or inactive (&#x60;false&#x60;). This method should only
+ * be used after the board is &#x27;opened&#x27;. Calling it before will fail silently.
+ *
+ * @method setOutput
+ * @param index {int|Array} The output number to set (or array of output numbers)
+ * @param [value=false] {Boolean} The value you wish to set the output to.
+ * @returns {PhidgetRFID} Returns the &#x60;PhidgetRFID&#x60; object to allow method chaining.
+ * @chainable
+ */
+PhidgetRFID.prototype.setOutput = function(index, value) {
+
+  // var self = this;
+  if (this.ready !== true) { return this; }
+
+  index = [].concat(index);
+  value = (value === true);
+  var vOut = (value === true) ? 1 : 0;
+
+  for (var i = 0; i &lt; index.length; i++) {
+    var pos = parseInt(index[i]);
+    if (!this.outputs[pos]) { this.outputs[pos] = {}; }
+    this.outputs[pos].value = value;
+    this._sendPck(this._makePckString(&#x27;Output&#x27;, pos), vOut, true);
+  }
+
+  return this;
+
+};
+
+/**
+ * Writes a tag. Please note that not all devices have write capacity. This method will be silently
+ *
+ * @method write
+ * @param tag {String} The value that should be written to the card.
+ * @param protocol {Number=1} An integer identifying the protocol to be used. 1 is EM4100, 2 is
+ * ISO11785 FDX-B and 3 is PhidgetTag. Default is EM4100.
+ * @param lock {Boolean=false} Whether the card should be prevented from being written again.
+ * Default is false.
+ *
+ * @returns {PhidgetRFID} Returns the &#x60;PhidgetRFID&#x60; object to allow method chaining.
+ * @chainable
+ */
+PhidgetRFID.prototype.write = function(tag, protocol, lock) {
+
+  var intLock = (lock === true) ? 1 : 0;
+  protocol = parseInt(protocol);
+  if ( !(protocol &gt;= 1 &amp;&amp; protocol &lt;= 3) ) { protocol = 1; }
+
+  var write = protocol + &quot;/&quot; + intLock + &quot;/&quot; + tag;
+  this._sendPck(this._makePckString(&#x27;WriteTag&#x27;), write, true);
+
+  return this;
+
+};
+
+module.exports.PhidgetRFID = PhidgetRFID;
 
     </pre>
 </div>
