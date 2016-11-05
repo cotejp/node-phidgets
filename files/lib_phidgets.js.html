@@ -17,7 +17,7 @@
                 <h1><img src="../assets/css/logo.png" title="phidgets" width="117" height="52"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.4</em>
+            <em>API Docs for: 0.5.5</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -788,8 +788,8 @@ Phidget.prototype._parsePskKey = function(oPsk, self) {
   var value   = psk.split(&#x27;&quot;&#x27;)[1];                    // 69, PhidgetLED, label, 904, etc.
   var status  = psk.split(&#x27;&quot; (&#x27;)[1].replace(&quot;)&quot;, &#x27;&#x27;); // added, changed, removing, etc.
 
-  // Grab the serial as soon as we see it. This is also our first chance to initialize
-  // the board with desired phidget-specific initial settings.
+  // Grab the serial as soon as we see it. This is also our first chance to initialize the board
+  // with desired phidget-specific initial settings.
   if ( !self.serial &amp;&amp; parseInt(parts[2]) &gt; 0 ) {
     self.serial = parseInt(parts[2]);
     self._setPhidgetSpecificInitialState();
@@ -797,7 +797,7 @@ Phidget.prototype._parsePskKey = function(oPsk, self) {
 
   // Make sure to dispatch the incoming data only if its meant for this device (because there could
   // be more than one).
-  if (serial !== this.serial) return;
+  if (serial !== this.serial) { return; }
 
   if ( keyword === &#x27;Status&#x27; &amp;&amp; status === &#x27;removing&#x27;) {
 
