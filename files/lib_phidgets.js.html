@@ -17,7 +17,7 @@
                 <h1><img src="../assets/css/logo.png" title="phidgets" width="117" height="52"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.5</em>
+            <em>API Docs for: 0.5.6-0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -44,6 +44,7 @@
                                 <li><a href="../classes/PhidgetLED.html">PhidgetLED</a></li>
                                 <li><a href="../classes/PhidgetRFID.html">PhidgetRFID</a></li>
                                 <li><a href="../classes/PhidgetStepper.html">PhidgetStepper</a></li>
+                                <li><a href="../classes/PhidgetTemperatureSensor.html">PhidgetTemperatureSensor</a></li>
                             </ul>
                 
                             <ul id="api-modules" class="apis modules">
@@ -122,6 +123,7 @@ module.exports = {};
  *    * {{#crossLink &quot;PhidgetLED&quot;}}{{/crossLink}}
  *    * {{#crossLink &quot;PhidgetBridge&quot;}}{{/crossLink}}
  *    * {{#crossLink &quot;PhidgetStepper&quot;}}{{/crossLink}}
+ *    * {{#crossLink &quot;PhidgetTemperatureSensor&quot;}}{{/crossLink}}
  *
  * This object extends Node.js&#x27;
  * [&#x60;events.EventEmitter&#x60; object](https://nodejs.org/api/events.html#events_class_events_eventemitter).
@@ -155,7 +157,8 @@ var Phidget = function(type) {
       &#x27;PhidgetBridge&#x27;,
       &#x27;PhidgetLED&#x27;,
       &#x27;PhidgetRFID&#x27;,
-      &#x27;PhidgetStepper&#x27;
+      &#x27;PhidgetStepper&#x27;,
+      &#x27;PhidgetTemperatureSensor&#x27;
     ]
   });
 
@@ -2753,6 +2756,372 @@ PhidgetRFID.prototype.write = function(tag, protocol, lock) {
 };
 
 module.exports.PhidgetRFID = PhidgetRFID;
+
+
+
+
+
+
+
+
+
+/****************************************************************************************/
+/*****************************  PhidgetTemperatureSensor  *******************************/
+/****************************************************************************************/
+
+/**
+ * The &#x60;PhidgetTemperatureSensor&#x60; class allows you receive data from PhidgetTemperatureSensor
+ * boards.
+ *
+ * As of this writing, this class has only been tested with a
+ * [1048_0 - PhidgetTemperatureSensor 4-input](http://www.phidgets.com/products.php?product_id=1048),
+ * but should be compatible with any PhidgetTemperatureSensor board.
+ * 
+ * &#x60;&#x60;&#x60;JavaScript
+ * var PhidgetTemperatureSensor = require(&#x27;phidgets&#x27;).PhidgetTemperatureSensor;
+ * 
+ * var pts = new PhidgetTemperatureSensor();
+ * 
+ * function onReady() {
+ * 
+ *    var inputIndex = 0;
+ *    
+ *    // set the ThermocoupleType to K
+ *    pts.setThermocoupleType(inputIndex, PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.TYPE_K);
+ * 
+ *    // receive temperature events when the temperature changes by at least 2 degrees Celsius
+ *    // (default is 0.5)
+ *    pts.setTemperatureChangeTrigger(inputIndex, 2);
+ *    
+ *    pts.on(&#x27;temperature&#x27;, function (emitter, data) {
+ *      if (data.index === inputIndex) {
+ *        console.log(&#x27;Temperature: &#x27; + data.value);
+ *      }
+ *    });
+ * 
+ * }
+ * 
+ * pts.addListener(&#x27;opened&#x27;, onReady);
+ * 
+ * pts.open();
+ * &#x60;&#x60;&#x60;
+ * 
+ * This object extends the &#x60;Phidget&#x60; object which itself extends Node.js&#x27;
+ * [&#x60;events.EventEmitter&#x60; object](https://nodejs.org/api/events.html#events_class_events_eventemitter).
+ * See that object&#x27;s documentation for more inherited methods and properties.
+ *
+ * @class PhidgetTemperatureSensor
+ * @constructor
+ * @extends Phidget
+ * @author Andrew Berger &lt;andrew@andrewberger.net&gt;
+ */
+var PhidgetTemperatureSensor = function() {
+  PhidgetTemperatureSensor.super_.call(this, &#x27;PhidgetTemperatureSensor&#x27;);
+
+  var self = this;
+
+  /**
+   * [read-only] The last known ambient temperature of the sensor (where the inputs connect to the
+   * board), in degrees celsius.
+   * 
+   * @property ambientTemperature {Number}
+   * @instance
+   */
+  Object.defineProperty(this, &#x27;ambientTemperature&#x27;, {
+    enumerable: true,
+    get: function() {
+      return self._ambientTemperature;
+    }
+  });
+
+  /**
+   * [read-only] The highest possible ambient temperature value which can be returned by the sensor,
+   * in degrees celsius.
+   * 
+   * @property ambientTemperatureMax {Number}
+   * @instance
+   */
+  Object.defineProperty(this, &#x27;ambientTemperatureMax&#x27;, {
+    enumerable: true,
+    get: function() {
+      return self._ambientTemperatureMax;
+    }
+  });
+
+  /**
+   * [read-only] The lowest possible ambient temperature value which can be returned by the sensor,
+   * in degrees celsius.
+   * 
+   * @property ambientTemperatureMin {Number}
+   * @instance
+   */
+  Object.defineProperty(this, &#x27;ambientTemperatureMin&#x27;, {
+    enumerable: true,
+    get: function() {
+      return self._ambientTemperatureMin;
+    }
+  });
+
+  /**
+   * [read-only] An object containing data about each input on the device.
+   *
+   * @property inputs {Object}
+   * 
+   * @property inputs.count {int} The number of inputs available on the device.
+   * 
+   * @property inputs[int].temperature {Number} The input&#x27;s last known temperature in degrees
+   * celsius.
+   * 
+   * @property inputs[int].temperatureMax {Number} The highest temperature possible for the given
+   * input, based on thermocouple type.
+   * 
+   * @property inputs[int].temperatureMin {Number} The lowest temperature possible for the given
+   * input, based on thermocouple type.
+   * 
+   * @property inputs[int].trigger {Number} The input&#x27;s temperature change trigger, in
+   * degrees celsius.
+   * 
+   * @property inputs[int].potential {Number} The input&#x27;s last known voltage.
+   * 
+   * @property inputs[int].potentialMax {Number} The highest voltage possible for the given input,
+   * based on thermocouple type.
+   * 
+   * @property inputs[int].potentialMin {Number} The lowest voltage possible for the given input,
+   * based on thermocouple type.
+   * 
+   * @property inputs[int].thermocoupleType {int} The type of thermocouple attached to the given
+   * input. Value corresponds to a value from PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.
+   */
+  this.inputs = {};
+
+  /** @private */
+  this._ambientTemperature = undefined;
+
+  /** @private */
+  this._ambientTemperatureMax = undefined;
+
+  /** @private */
+  this._ambientTemperatureMin = undefined;
+
+};
+
+util.inherits(PhidgetTemperatureSensor, Phidget);
+
+
+/**
+ * [read-only] An enum of supported thermocouple types. Support for other thermocouple types, and
+ * voltage sources other than thermocouples in the valid range (between potentialMin and
+ * potentialMax) can be achieved using potential.
+ * 
+ * @property THERMOCOUPLE_TYPES {Object}
+ * @property THERMOCOUPLE_TYPES.TYPE_K {int} Integer value represent a K-type thermocouple.
+ * @property THERMOCOUPLE_TYPES.TYPE_J {int} Integer value represent a J-type thermocouple.
+ * @property THERMOCOUPLE_TYPES.TYPE_E {int} Integer value represent a E-type thermocouple.
+ * @property THERMOCOUPLE_TYPES.TYPE_T {int} Integer value represent a T-type thermocouple.
+ */
+Object.defineProperty(PhidgetTemperatureSensor, &#x27;THERMOCOUPLE_TYPES&#x27;, {
+  enumerable: true,
+  writable: false,
+  value: {
+    TYPE_K: 1,
+    TYPE_J: 2,
+    TYPE_E: 3,
+    TYPE_T: 4
+  }
+});
+
+/** @private */
+Object.defineProperty(PhidgetTemperatureSensor, &#x27;_thermocoupleTypesArray&#x27;, {
+  writable: false,
+  value: [
+    PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.TYPE_J,
+    PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.TYPE_K,
+    PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.TYPE_E,
+    PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.TYPE_T
+  ]
+});
+
+/**
+ * Sets the change trigger for an input. This is the amount by which the sensed temperature must
+ * change between temperature change events. By default this is set to 0.5. Setting trigger
+ * to 0 will cause all temperature updates to fire events. This is helpful for applications that are
+ * implementing their own filtering.
+ * 
+ * @method setTemperatureChangeTrigger
+ * @param index {int|Array} The input&#x27;s number (or an array of input numbers)
+ * @param value {Number} The TemperatureChangeTigger value to set
+ * @returns {PhidgetTemperatureSensor} Returns the PhidgetTemperatureSensor to allow method
+ * chaining.
+ * @chainable
+ */
+PhidgetTemperatureSensor.prototype.setTemperatureChangeTrigger = function(index, value) {
+
+  var self = this;
+  if (self.ready !== true) { return self; }
+
+  value = Number(value);
+
+  if (isNaN(value) || value &lt; 0) {
+    throw new Error(&#x27;Trigger must be a floating-point number greater than or equal to 0&#x27;);
+  }
+
+  index = [].concat(index);
+
+  for (var i = 0; i &lt; index.length; i++) {
+    var pos = Number(index[i]);
+    if (!self.inputs[pos]) { self.inputs[pos] = {}; }
+    self.inputs[pos].temperatureChangeTrigger = value;
+    self._sendPck(self._makePckString(&#x27;Trigger&#x27;, pos), value, true);
+  }
+
+  return self;
+};
+
+
+/**
+ * Sets the thermocouple type for an input. The possible values are &#x27;J&#x27;, &#x27;K&#x27;, &#x27;E&#x27;, and &#x27;T&#x27;, or one
+ * of the values in the PhidgetTemperatureSensor.THERMOCOUPLE_TYPES enum. Support for other
+ * thermocouple types, and voltage sources other than thermocouples in the valid range (between
+ * potentialMin and potentialMax) can be achieved using potential.
+ * 
+ * @method setThermocoupleType
+ * @param index {int|Array} The input&#x27;s index (or an array of input indices)
+ * @param value {string|Number} The ThermocoupleType to set
+ * @returns {PhidgetTemperatureSensor} Returns the PhidgetTemperatureSensor to allow method
+ * chaining.
+ * @chainable
+ */
+PhidgetTemperatureSensor.prototype.setThermocoupleType = function(index, value) {
+
+  var self = this;
+  if (self.ready !== true) { return self; }
+
+  if (typeof value === &#x27;string&#x27;) {
+    var propName = &#x27;TYPE_&#x27; + value.toUpperCase();
+    if (!PhidgetTemperatureSensor.THERMOCOUPLE_TYPES.hasOwnProperty(propName)) {
+      throw new Error(&#x27;Unsupported thermocouple type: &#x60;&#x27; + value + &#x27;&#x60;&#x27;);
+    }
+
+    value = PhidgetTemperatureSensor.THERMOCOUPLE_TYPES[propName];
+  } else {
+    value = Number(value);
+
+    if (isNaN(value) || (PhidgetTemperatureSensor._thermocoupleTypesArray.indexOf(value) &lt; 0)) {
+      throw new Error(&#x27;ThermocoupleType must be one of PhidgetTemperatureSensor.THERMOCOUPLE_TYPES&#x27;);
+    }
+  }
+
+  index = [].concat(index);
+
+  for (var i = 0; i &lt; index.length; i++) {
+    var pos = Number(index[i]);
+    if (!self.inputs[pos]) { self.inputs[pos] = {}; }
+    self.inputs[pos].thermocoupleType = value;
+    self._sendPck(self._makePckString(&#x27;ThermocoupleType&#x27;, pos), value, true);
+  }
+
+  return self;
+};
+
+/** @private See overridden method for details. */
+PhidgetTemperatureSensor.prototype._parsePhidgetSpecificData = function (data) {
+  
+  var self = this;
+
+  // keywords which should result in an emitted event
+  var emittableEvents = [
+
+    // @TODO is this event necessary?
+    /**
+     * The sensor&#x27;s ambient temperature has changed.
+     *
+     * @event ambientTemperature
+     * @param {PhidgetTemperatureSensor} emitter The actual PhidgetTemperatureSensor object that
+     * emitted the event.
+     * @param {Object} data An object containing the sensor data and related information
+     * @param {Number} data.value The sensor&#x27;s new ambient temperature.
+     */
+    &#x27;AmbientTemperature&#x27;,
+
+    /**
+     * The calculated temperature of the given input has changed by more than
+     * temperatureChangeTrigger. This value is dependent on the sensor&#x27;s ambient temperature, the
+     * input&#x27;s thermocouple type, and the input&#x27;s potential.
+     *
+     * @event temperature
+     * @param {PhidgetTemperatureSensor} emitter The actual PhidgetTemperatureSensor object that
+     * emitted the event.
+     * @param {Object} data An object containing the sensor data and related information
+     * @param {int} data.index The input&#x27;s index number
+     * @param {Number} data.value The input&#x27;s new temperature.
+     */
+    &#x27;Temperature&#x27;,
+
+    // @TODO it may be useful to return the last known AmbientTemperature with this event, as its
+    // most likely use is in calculating temperature from a voltage source other than a J K E or T thermocouple.
+    /**
+     * The potential (voltage) of the given input has changed.
+     *
+     * @event potential
+     * @param {PhidgetTemperatureSensor} emitter The actual PhidgetTemperatureSensor object that
+     * emitted the event.
+     * @param {Object} data An object containing the sensor data and related information
+     * @param {int} data.index The input&#x27;s index number
+     * @param {Number} data.value The input&#x27;s new potential.
+     */
+    &#x27;Potential&#x27;
+  ];
+
+  // keywords which relate to a specific input, and have a useful data.index value
+  var inputSpecificEvents = [
+    &#x27;Temperature&#x27;,
+    &#x27;TemperatureMax&#x27;,
+    &#x27;TemperatureMin&#x27;,
+    &#x27;Potential&#x27;,
+    &#x27;PotentialMax&#x27;,
+    &#x27;PotentialMin&#x27;,
+    &#x27;ThermocoupleType&#x27;,
+    &#x27;Trigger&#x27;
+  ];
+
+  // emitted event names and properties on each input must be camelCase
+  var camelizedKeyword = data.keyword.charAt(0).toLowerCase() + data.keyword.slice(1);
+
+  // the value emitted by an emittableEvent
+  var eventData = {
+    value: Number(data.value)
+  };
+
+  if (data.keyword === &#x27;AmbientTemperature&#x27;) {
+    self._ambientTemperature = eventData.value;
+
+  } else if (data.keyword === &#x27;AmbientTemperatureMax&#x27;) {
+    self._ambientTemperatureMax = eventData.value;
+
+  } else if (data.keyword === &#x27;AmbientTemperatureMin&#x27;) {
+    self._ambientTemperatureMin = eventData.value;
+
+  } else if (data.keyword === &#x27;NumberOfSensors&#x27;) {
+    self.inputs.count = eventData.value;
+
+  } else if (inputSpecificEvents.indexOf(data.keyword) &gt;= 0) {
+    if (!self.inputs[data.index]) { self.inputs[data.index] = {}; }
+
+    eventData.index = data.index;
+
+    self.inputs[data.index][camelizedKeyword] = eventData.value;
+
+  } else {
+    // unhandled event
+    return;
+  }
+
+  if (self.ready &amp;&amp; (emittableEvents.indexOf(data.keyword) &gt;= 0)) {
+    self.emit(camelizedKeyword, self, eventData);
+  }
+};
+
+module.exports.PhidgetTemperatureSensor = PhidgetTemperatureSensor;
 
     </pre>
 </div>
