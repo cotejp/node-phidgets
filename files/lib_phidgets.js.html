@@ -17,7 +17,7 @@
                 <h1><img src="../assets/css/logo.png" title="phidgets" width="117" height="52"></h1>
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.6-0</em>
+            <em>API Docs for: 0.5.7</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -2534,7 +2534,7 @@ var PhidgetRFID = function() {
    },
    set: function(value) {
      self._sendPck(self._makePckString(&#x27;LEDOn&#x27;), value ? 1 : 0, true);
-     self._led = value ? true : false;
+     self._led = !!value;
    }
  });
 
@@ -2552,7 +2552,7 @@ var PhidgetRFID = function() {
    },
    set: function(value) {
      self._sendPck(self._makePckString(&#x27;AntennaOn&#x27;), value ? 1 : 0, true);
-     self._antenna = value ? true : false;
+     self._antenna = !!value;
    }
 
  });
