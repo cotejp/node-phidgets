@@ -1,7 +1,7 @@
 {
     "project": {
         "name": "phidgets",
-        "version": "0.5.10",
+        "version": "0.5.11",
         "description": "A Node.js library enabling the use of various Phidgets interface boards.",
         "url": ""
     },
